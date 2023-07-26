@@ -1,0 +1,5 @@
+"0","cp.plot <- ggplot(data2, mapping = aes(x=target, fill = cp)) +"
+"0","  geom_bar(position = ""dodge"") +"
+"0","  labs(title = ""Prevelance of Heart Disease for Different Chest Pain Types"", x = ""Heart Disease"", y = ""Count"", fill = ""Chest Pain Type"")"
+"0",""
+"0","cp.plot"

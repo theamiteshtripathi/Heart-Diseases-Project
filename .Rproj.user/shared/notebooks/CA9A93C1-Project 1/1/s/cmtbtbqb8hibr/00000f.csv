@@ -1,0 +1,6 @@
+"0","ggplot(data2, aes(x=target, fill=target))+"
+"0","     geom_bar()+"
+"0","     xlab(""Heart Disease Indicator"")+"
+"0","     ylab(""Count"")+"
+"0","     ggtitle(""Presence & Absence of Heart Disease"")+"
+"0","     scale_fill_discrete(name= 'Heart Disease', labels =c(""Absent"", ""Present""))"

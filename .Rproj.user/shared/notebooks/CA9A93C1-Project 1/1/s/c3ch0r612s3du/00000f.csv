@@ -1,0 +1,8 @@
+"0","g_age_chol <- ggplot(data2,aes(x=age,y=chol))+"
+"0","    geom_point()+"
+"0","    geom_smooth(method = ""lm"", se = FALSE)+"
+"0","    scale_x_continuous(name=""Age"")+"
+"0","    scale_y_continuous(name=""Chol Level"")+"
+"0","    ggtitle(""Age & Cholesterol"")+"
+"0","    theme(plot.title = element_text(hjust = 0.5))"
+"0","  g_age_chol"

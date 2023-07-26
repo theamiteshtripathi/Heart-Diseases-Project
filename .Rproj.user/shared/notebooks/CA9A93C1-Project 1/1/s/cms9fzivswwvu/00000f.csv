@@ -1,0 +1,7 @@
+"0","age.plot <- ggplot(data2, mapping = aes(x = age, fill = target)) +"
+"0","  stat_count(binwidth=0.5) +"
+"0","  facet_wrap(vars(target)) +"
+"0","  labs(title = ""Prevelance of Heart Disease Across Age"", x = ""Age (years)"", y = ""Count"", fill = ""Heart Disease"")"
+"2","Warning: Ignoring unknown parameters: binwidth"
+"0","age.plot"
+"0",""

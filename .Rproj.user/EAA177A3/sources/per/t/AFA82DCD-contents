@@ -1,0 +1,240 @@
+---
+title: "Project 1"
+output: pdf_document
+date: "2022-11-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# INCLUDING LIBRARY AND PLAYING AROUND WITH DATA
+
+
+```{r}
+library(ggplot2)
+library(forcats)
+library(corrplot)
+library(tidyverse)
+library(pROC)
+library(gridExtra)
+library(grid)
+library(ggplot2)
+library(lattice)
+```
+ 
+```{r}
+data <- read.csv("heart.csv")
+head(data)
+summary(data)
+glimpse(data)
+ncol(data)
+nrow(data)
+colnames(data)
+summary(data)
+```
+ 
+
+
+# DATA TRANSFORMATION
+```{r}
+data2 <- data %>%
+     mutate(sex = if_else(sex == 1, "MALE", "FEMALE"),
+            fbs = if_else(fbs == 1, ">120", "<=120"),
+            exang = if_else(exang == 1, "YES" ,"NO"),
+            cp = if_else(cp == 1, "ATYPICAL ANGINA",
+                         if_else(cp == 2, "NON-ANGINAL PAIN", "ASYMPTOMATIC")),
+            restecg = if_else(restecg == 0, "NORMAL",
+                              if_else(restecg == 1, "ABNORMALITY", "PROBABLE OR DEFINITE")),
+            slope = as.factor(slope),
+            ca = as.factor(ca),
+            thal = as.factor(thal),
+            target = if_else(target == 1, "YES", "NO")
+     ) %>% 
+     mutate_if(is.character, as.factor) %>% 
+     dplyr::select(target, sex, fbs, exang, cp, restecg, slope, ca, thal, everything())
+```
+ 
+
+# DATA VISUALIZATION
+
+ 
+```{r}
+ggplot(data2, aes(x=target, fill=target))+
+     geom_bar()+
+     xlab("Heart Disease Indicator")+
+     ylab("Count")+
+     ggtitle("Presence & Absence of Heart Disease")+
+     scale_fill_discrete(name= 'Heart Disease', labels =c("Absent", "Present"))
+```
+```{r}
+age.plot <- ggplot(data2, mapping = aes(x = age, fill = target)) +
+  stat_count(binwidth=0.5) +
+  facet_wrap(vars(target)) +
+  labs(title = "Prevelance of Heart Disease Across Age", x = "Age (years)", y = "Count", fill = "Heart Disease")
+
+age.plot
+
+```
+
+```{r}
+cp.plot <- ggplot(data2, mapping = aes(x=target, fill = cp)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Prevelance of Heart Disease for Different Chest Pain Types", x = "Heart Disease", y = "Count", fill = "Chest Pain Type")
+
+cp.plot
+```
+
+```{r}
+sex.plot <- ggplot(data2, mapping = aes(x = sex, fill = target)) +
+  geom_bar(position = "fill") +
+  labs(x = "Sex", y = "Proportion", fill = "Heart Disease") +
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 12), 
+        axis.title.y = element_text(size = 12), axis.text.y = element_text(size = 12))
+
+fbs.plot <- ggplot(data2, mapping = aes(x=fbs, fill=target)) +
+  geom_bar(position = "fill") +
+  labs(x = "Fasting Blood Sugar", y = "Proportion", fill = "Heart Disease") +
+  scale_x_discrete(labels = c("low", "high"))+
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 12), 
+        axis.title.y = element_text(size = 12), axis.text.y = element_text(size = 12))
+
+exang.plot <- ggplot(data2, mapping = aes(x = exang, fill = target)) +
+  geom_bar(position = "fill") +
+  labs(x = "Exercise induced angina", y = "Proportion", fill = "Heart Disease") +
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 12))
+
+grid.arrange(sex.plot, fbs.plot, exang.plot, nrow=2)
+```
+
+```{r}
+trestbps.plot <- ggplot(data2, mapping = aes(x=trestbps, y=target)) +
+  geom_boxplot() +
+  labs(x = "Resting Blood Pressure (mm Hg)", y = "Heart Disease") +
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 12), 
+        axis.title.y = element_text(size = 12), axis.text.y = element_text(size = 12))
+
+chol.plot <- ggplot(data2, mapping = aes(x=chol, y=target)) +
+  geom_boxplot() +
+  labs(x = "Serum Cholestoral (mg/dl)", y = "Heart Disease") +
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 12), 
+        axis.title.y = element_text(size = 12), axis.text.y = element_text(size = 12))
+
+thalach.plot <- ggplot(data2, mapping = aes(x = thalach, y = target)) +
+  geom_boxplot() +
+  labs(x = "Maximum Heart Rate (bpm)", y = "Heart Disease") +
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 12), 
+        axis.title.y = element_text(size = 12), axis.text.y = element_text(size = 12))
+
+grid.arrange(trestbps.plot, chol.plot, thalach.plot, nrow=2)
+
+```
+```{r}
+#Select categorical vars, recode them to their character values, convert to long format
+data3 <- data2 %>%
+  select(sex,
+         cp,
+         fbs,
+         restecg,
+         exang,
+         slope,
+         thal,
+         target) %>%
+  mutate(sex = recode_factor(sex, `0` = "female", 
+                                  `1` = "male" ),
+         Chest_Pain_Type = recode_factor(cp, `1` = "typical",   
+                                                          `2` = "atypical",
+                                                          `3` = "non-angina", 
+                                                          `4` = "asymptomatic"),
+         Fasting_Blood_Sugar = recode_factor(fbs, `0` = "<= 120 mg/dl", 
+                                                                  `1` = "> 120 mg/dl"),
+         Resting_ECG = recode_factor(restecg, `0` = "normal",
+                                                  `1` = "ST-T abnormality",
+                                                  `2` = "LV hypertrophy"),
+         Exercise_Induced_Angina = recode_factor(exang, `0` = "no",
+                                                                          `1` = "yes"),
+         Peak_Exercise_ST_Segment = recode_factor(slope, `1` = "up-sloaping",
+                                                                            `2` = "flat",
+                                                                            `3` = "down-sloaping"),
+         Thalassemia = recode_factor(thal, `3` = "normal",
+                                                  `6` = "fixed defect",
+                                                  `7` = "reversible defect")) %>%
+  gather(key = "key", value = "value", -target)
+```
+
+```{r}
+#Visualize with bar plot
+data3 %>% 
+  ggplot(aes(value)) +
+    geom_bar(aes(x        = value, 
+                 fill     = target), 
+                 alpha    = .6, 
+                 position = "dodge", 
+                 color    = "black",
+                 width    = .8
+             ) +
+    labs(x = "",
+         y = "",
+         title = "Scaled Effect of Categorical Variables") +
+    theme(
+         axis.text.y  = element_blank(),
+         axis.ticks.y = element_blank()) +
+    facet_wrap(~ key, scales = "free", nrow = 4) +
+    scale_fill_manual(
+         values = c("#fde725ff", "#20a486ff"),
+         name   = "Heart\nDisease",
+         labels = c("No HD", "Yes HD"))
+```
+
+```{r}
+cor_heart <- cor(data[, 1:14])
+cor_heart
+ 
+corrplot(cor_heart, type="upper", order="hclust", tl.col="black", tl.srt=45)
+```
+
+```{r}
+g_age_chol <- ggplot(data2,aes(x=age,y=chol))+
+    geom_point()+
+    geom_smooth(method = "lm", se = FALSE)+
+    scale_x_continuous(name="Age")+
+    scale_y_continuous(name="Chol Level")+
+    ggtitle("Age & Cholesterol")+
+    theme(plot.title = element_text(hjust = 0.5))
+  g_age_chol
+  
+  # age and max heart rate
+  g_age_maxhr <- ggplot(data2,aes(x=age,y=thalach))+
+    geom_point()+geom_smooth(method = "lm", se= FALSE)+
+    scale_x_continuous(name="Age")+
+    scale_y_continuous(name="Max heart rate")+
+    ggtitle("Age & Max Heart Rate")+
+    theme(plot.title = element_text(hjust = 0.5))
+  
+  g_age_maxhr
+```
+
+```{r}
+g1 <- ggplot(data2,aes(thalach,col=as.factor(target),fill=as.factor(target)))+
+    geom_density(alpha=0.2)+
+    guides(col="none")+
+    labs(fill="Target",x="Maximum heart rate achieved")
+    #theme_economist_white(gray_bg = FALSE)
+  
+  # max heart rate and target boxplot
+g2 <- ggplot(data2,aes(as.factor(target),thalach,fill=as.factor(target)))+
+    geom_boxplot()+
+    labs(y="Maximum Heart Rate Achieved",x="Target",fill="Target")
+    #theme_economist_white(gray_bg = FALSE)
+  
+  
+grid.arrange(g1, g2, nrow = 1)
+```
+
+```{r}
+pairs(data2)
+```
+
+
+
+
